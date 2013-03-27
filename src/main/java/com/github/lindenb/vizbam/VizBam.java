@@ -3,7 +3,6 @@ package com.github.lindenb.vizbam;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -140,6 +139,7 @@ public class VizBam implements Closeable
         //find biggest gaps
        
         Map<Integer, Integer> genomicPos2gapSize=new HashMap<Integer, Integer>();
+        Map<Integer,Consensus> consensus=new HashMap<Integer,Consensus>();
         for(SAMRecord rec:L)
             {
             int refPos=rec.getAlignmentStart();;
@@ -167,14 +167,16 @@ public class VizBam implements Closeable
                         break;
                         }
                     case N : //cont. -- reference skip
-                    case D :
+                    case D : //cont
+                    case EQ:
+                    case M:
+                    case X:
                         {
-                        refPos+=ce.getLength();
-                        break;
-                        }
-                    case EQ: case M: case X:
-                        {
-                        refPos+=ce.getLength();
+                        for(int b=0;b<ce.getLength();++b )
+                        	{
+                        	consensus.put(refPos, new Consensus());
+                        	refPos++;
+                        	}
                         break;
                         }
                     default: throw new IllegalStateException("op:"+ce.getOperator());
@@ -242,14 +244,18 @@ public class VizBam implements Closeable
                 while(refPos< samRecord.getAlignmentStart() &&
                 	  pixel_x < pixel2refPos.length)
                     {
-                	System.out.print(".");
-                	if(pixel2refPos[pixel_x]==-1)
+                	if( pixel2refPos[pixel_x]==-1)
                 		{
                 		System.out.print(";");
+                		pixel_x++;
                 		}
-                	refPos++;
-                    pixel_x++;
-                    }
+                	else
+                		{
+                		System.out.print(".");
+                		refPos++;
+                		pixel_x++;
+                		}
+                	}
                 int readPos=0;
                 List<CigarElement> cigarElements=samRecord.getCigar().getCigarElements();
              
@@ -340,6 +346,7 @@ public class VizBam implements Closeable
                         default: throw new IllegalStateException("op:"+ce.getOperator());
                         }
                     }
+                
                 System.out.print("\t"+samRecord.getCigarString()+" "+
                     samRecord.getReadString()+" refPos "+samRecord.getAlignmentStart()
                     +" "+ getCigarBeginIndex(cigarElements));
