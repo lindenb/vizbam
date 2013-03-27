@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project default="all">
+<property file="build.properties"/>
+
+<path id="picard.lib" description="picard.jars">
+	<fileset  dir="${picard.dir}">
+        <include name="picard-${picard.version}.jar"/>
+		<include name="sam-${picard.version}.jar"/>
+	</fileset>
+</path>
+	
+<target name="all" depends="vizbam.lib">
+</target>
+
+<target name="vizbam.lib">
+	<mkdir dir="lib"/>
+	<mkdir dir="tmp"/>
+	
+		
+	<javac destdir="tmp" debug="true" includeantruntime="false">
+		<classpath refid="picard.lib"/>
+		<src path="src/main/java"/>
+		<include name="**/VizBam.java" />
+	</javac>
+	
+	<pathconvert property="manifest_cp1" pathsep=" " refid="picard.lib"/>
+	
+	<jar destfile="dist/vizbam.jar" basedir="tmp">
+		
+		<manifest>
+			<attribute name="Built-By" value="${user.name}"/>
+			<attribute name="Main-Class" value="com.github.lindenb.vizbam.VizBam"/>
+			<attribute name="Class-Path" value="${manifest_cp1}"/>
+		</manifest>
+	</jar>
+	<delete dir="tmp"/>
+</target>	
+	
+	
+</project>

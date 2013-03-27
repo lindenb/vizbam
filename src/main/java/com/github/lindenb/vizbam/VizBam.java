@@ -358,11 +358,12 @@ public class VizBam implements Closeable
      public static void main(String[] args) throws Exception
          {
          LOG.setLevel(Level.OFF);
+         /*
          args=new String[]{
              "-L","ALL",   
              "-R","/home/lindenb/package/samtools-0.1.18/examples/toy.fa",   
              "/home/lindenb/package/samtools-0.1.18/examples/toy.bam"
-             };
+             };*/
          File referenceFile=null;
         int optind=0;
         while(optind< args.length)
@@ -401,7 +402,7 @@ public class VizBam implements Closeable
                 }
             ++optind;
             }
-       
+        
         IndexedFastaSequenceFile fsf=null;
         if(referenceFile!=null)
             {
@@ -411,7 +412,7 @@ public class VizBam implements Closeable
         File f=new File(args[optind]);
          
         VizBam app=new VizBam(f,fsf);
-        app.align("ref", 1);
+        app.align("seq1", 1);
         System.out.println("Done.");
         app.close();
         }
