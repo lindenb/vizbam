@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.github.lindenb.vizbam.locparser.LocParser;
+
 
 import net.sf.picard.filter.AggregateFilter;
 import net.sf.picard.filter.DuplicateReadFilter;
@@ -22,6 +24,7 @@ import net.sf.picard.reference.ReferenceSequence;
 import net.sf.samtools.CigarElement;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMFileReader;
+import net.sf.samtools.SAMFileReader.ValidationStringency;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
 import net.sf.samtools.SAMSequenceDictionary;
@@ -31,25 +34,37 @@ public class VizBam implements Closeable
     {
     private static final Logger LOG=Logger.getLogger("com.github.lindenb.vizbam");
     private SAMFileReader samFileReader;
+    /** this class opened the samFileReader */
+    private boolean samFileReaderOwner=false;
     private IndexedFastaSequenceFile indexedFastaSequenceFile;
     private SAMSequenceDictionary samSequenceDictionary;
     /** number of columns */
     private int nCols=80;
     /** user filter for SamRecord */
     private SamRecordFilter samRecordFilter=null;
-    
+   
     private int minMappingQuality=0;
    
     private SamRecordListPacker packer=new SimpleSamRecordListpacker();//new PileupSamRecordListPacker();
-   
-   
    
     protected VizBam(
             File bamFile,
             IndexedFastaSequenceFile indexedFastaSequenceFile
             )
         {
-        this.samFileReader=new SAMFileReader(bamFile);
+    	this(new SAMFileReader(bamFile),
+    			indexedFastaSequenceFile
+    			);
+    	this.samFileReaderOwner=true;
+        }
+   
+    protected VizBam(
+    		SAMFileReader samFileReader,
+            IndexedFastaSequenceFile indexedFastaSequenceFile
+            )
+        {
+        this.samFileReader=samFileReader;
+        this.samFileReader.setValidationStringency(ValidationStringency.SILENT);
         this.indexedFastaSequenceFile=indexedFastaSequenceFile;
         if(this.indexedFastaSequenceFile!=null)
 	        {
@@ -71,7 +86,7 @@ public class VizBam implements Closeable
    
     public void close()
         {
-        this.samFileReader.close();
+        if(this.samFileReaderOwner) this.samFileReader.close();
         }
    
     protected void cleanup()
@@ -358,6 +373,7 @@ public class VizBam implements Closeable
      public static void main(String[] args) throws Exception
          {
          LOG.setLevel(Level.OFF);
+         List<String> regions=new ArrayList<String>();
          /*
          args=new String[]{
              "-L","ALL",   
@@ -378,6 +394,10 @@ public class VizBam implements Closeable
                 System.err.println(" -R <fasta> Reference File.");
                 return;
                 }
+            else if(args[optind].equals("-r") && optind+1 < args.length)
+	            {
+            	regions.add(args[++optind]);
+	            }
             else if(args[optind].equals("-R") && optind+1 < args.length)
                 {
                 referenceFile=new File(args[++optind]);
@@ -403,17 +423,45 @@ public class VizBam implements Closeable
             ++optind;
             }
         
-        IndexedFastaSequenceFile fsf=null;
-        if(referenceFile!=null)
-            {
-            fsf=new IndexedFastaSequenceFile(referenceFile);
-            }      
+        if(optind==args.length)
+        	{
+        	System.err.println("Illegal number of arguments");
+        	System.exit(-1);
+        	}
+        
+        if(referenceFile==null)
+        	{
+        	System.err.println("Reference file missing");
+        	System.exit(-1);
+        	}
+        IndexedFastaSequenceFile fsf=new IndexedFastaSequenceFile(referenceFile);
+        if(!fsf.isIndexed())
+        	{
+        	System.err.println("Reference file is not indexed.");
+        	System.exit(-1);
+        	}
        
         File f=new File(args[optind]);
          
         VizBam app=new VizBam(f,fsf);
-        app.align("seq1", 1);
-        System.out.println("Done.");
+        
+        if(regions.isEmpty())
+        	{
+        	app.align(
+        			 fsf.getSequenceDictionary().getSequence(0).getSequenceName(),
+        			 1);
+        	}
+        for(String r: regions)
+        	{
+        	SAMSequencePosition pos=LocParser.parseOne(fsf.getSequenceDictionary(), r, true);
+        	if(pos==null)
+        		{
+        		System.err.println("Cannot parse region:"+r);
+        		System.exit(-1);
+        		}
+        	app.align(pos.getName(),pos.getPosition());
+        	}
+        
         app.close();
         }
     }

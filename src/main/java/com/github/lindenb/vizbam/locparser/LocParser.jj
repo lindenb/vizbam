@@ -1,0 +1,166 @@
+options {
+static=false;
+DEBUG_PARSER=false;
+IGNORE_CASE=true;
+}
+
+PARSER_BEGIN(LocParser)
+package com.github.lindenb.vizbam.locparser;
+import net.sf.samtools.SAMSequenceDictionary;
+import net.sf.samtools.SAMSequenceRecord;
+import com.github.lindenb.vizbam.SAMSequencePosition;
+import java.math.BigInteger;
+
+/**
+ * Author:
+ *	Pierre Lindenbaum PhD
+ * WWW
+ *	http://plindenbaum.blogspot.com
+ * Motivation
+ *	parsing a genomic fragment (chr:start-end)
+ *
+ */
+ @javax.annotation.Generated(value="javacc")
+  @SuppressWarnings("unused")
+public class LocParser
+	{
+	private SAMSequenceDictionary samSequenceDictionary;
+	private boolean auto_trim=true;
+	private static final BigInteger TWO=new BigInteger("2");
+	
+	
+	private SAMSequenceRecord getSequenceByName(String s)
+        	{
+        	for(SAMSequenceRecord ssr:this.samSequenceDictionary.getSequences())
+        		{
+        		if(ssr.getSequenceName().equals(s)) return ssr;
+        		}
+        	return null;
+        	}
+	
+	
+	public LocParser(SAMSequenceDictionary samSequenceDictionary, java.io.Reader r,boolean auto_trim)
+		{
+		this(r);
+		this.samSequenceDictionary=samSequenceDictionary;
+		this.auto_trim=auto_trim;
+		}
+	
+	public static SAMSequencePosition parseOne(SAMSequenceDictionary samSequenceDictionary,String s,boolean auto_trim)
+		{
+		try
+			{
+            LocParser parser = new LocParser(samSequenceDictionary,new java.io.StringReader(s),auto_trim);
+			return parser.one();
+			}
+		catch(ParseException err)
+			{
+			return null;
+			}
+		}
+	
+	}
+	
+PARSER_END(LocParser)
+
+SKIP:{
+" "|"\n"
+}
+
+TOKEN:
+{
+  <#COMMA: ",">
+| <#LETTER:(["a"-"z"]|["A"-"Z"]|"_")>
+| <#DIGIT:["0"-"9"]>
+| <INT:<DIGIT> ( (<DIGIT>|<COMMA>)* <DIGIT>)? >
+| <BP: "b" ("p")?>
+| <KB: ("k") ("B")?>
+| <MB: ("m") ("B")?>
+| <GB: ("g") ("B")?>
+| <IDENTIFIER: <LETTER> (<DIGIT>|<LETTER>)* >
+| <COLON: ":" >
+| <DASH:  "-" >
+| <PLUS:  "+" >
+| <DELIM: ("|"|";") >
+}
+
+
+
+public SAMSequencePosition one():{SAMSequencePosition pos; }
+	{
+	( pos=segment() <EOF>)
+		{
+		return pos;
+		}
+	}
+
+private SAMSequencePosition segment():{
+		SAMSequenceRecord chrom;
+		BigInteger start=null;
+		BigInteger end=null ;
+		char sign='?';
+		}
+	{
+	( chrom=chromName() <COLON>  start= position() (<DASH> end=position() {sign='-';}| <PLUS> end=position() {sign='+';})? )
+		{
+		if(chrom==null) return null;
+		switch(sign)
+			{
+			case '?': end=start;break;
+			case '-': break;
+			case '+': start=start.subtract(end);end=BigInteger.ONE.add(start.add(end.multiply(TWO)));break;
+			}
+		BigInteger maxChrom=new BigInteger(String.valueOf(chrom.getSequenceLength()));
+		if(start.compareTo(BigInteger.ONE)<0)
+			{
+			if(!this.auto_trim) throw new ParseException(start.toString()+" < 0)");
+			start=BigInteger.ONE;
+			}
+		if(end.compareTo(start)<0)  throw new ParseException(start.toString()+" > "+end+")");
+		if(maxChrom.compareTo(start)<0)
+			{
+			if(!this.auto_trim) throw new ParseException(start.toString()+" > "+ maxChrom);
+			start=maxChrom;
+			}
+		if(maxChrom.compareTo(end)<0)
+			{
+			if(!this.auto_trim) throw new ParseException(end.toString()+" > "+ maxChrom);
+			end=maxChrom;
+			}
+		int pos=(int)((start.longValue()+end.longValue())/2L);
+		
+		return new SAMSequencePosition(chrom,pos);
+		}
+	}
+
+private  BigInteger position():{BigInteger i=null; BigInteger mul=BigInteger.ONE;}
+	{
+	i=integer() (mul=factor())? { return i.multiply(mul);}
+	}
+
+private BigInteger factor():{}
+	{
+	(
+	  <BP> { return new BigInteger("1");}
+	| <KB> { return new BigInteger("1000");}
+	| <MB> { return new BigInteger("1000000");}
+	| <GB> { return new BigInteger("1000000000");}
+	)
+	}
+
+private BigInteger integer():{Token t;}
+	{
+	t=<INT> { return new BigInteger(t.image.replace(",","")); } 
+	}
+	
+private SAMSequenceRecord chromName():{BigInteger i; String s;}
+	{
+	( i=integer() { return   getSequenceByName(i.toString()); } 
+	| s=identifier() { return getSequenceByName(s);}
+	)
+	}
+
+private String identifier():{Token t;}
+	{
+	t=<IDENTIFIER> { return  t.image; } 
+	}
