@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns:v="http://github.com/lindenb/vizbam"
+	elementFormDefault="qualified"
+	attributeFormDefault="unqualified"
+	targetNamespace="http://github.com/lindenb/vizbam"
+	>
+	
+  <xs:complexType name="VizBam">
+    <xs:sequence>
+      <xs:element name="references">
+        <xs:complexType>
+      		<xs:sequence>
+      			<xs:element name="reference" type="v:Reference" minOccurs="1" maxOccurs="unbounded"/>
+      		</xs:sequence>
+      	</xs:complexType>
+      </xs:element>
+      <xs:element name="samples">
+        <xs:complexType>
+      		<xs:sequence>
+      			<xs:element name="sample" type="v:Sample" minOccurs="1" maxOccurs="unbounded"/>
+      		</xs:sequence>
+      	</xs:complexType>
+      </xs:element>
+      <xs:element name="bams">
+        <xs:complexType>
+      		<xs:sequence>
+      			<xs:element name="bam" type="v:Bam" minOccurs="1" maxOccurs="unbounded"/>
+      		</xs:sequence>
+      	</xs:complexType>
+      </xs:element>
+      <xs:element name="projects">
+      	<xs:complexType>
+      		<xs:sequence>
+      			<xs:element name="project" type="v:Project" minOccurs="1" maxOccurs="unbounded"/>
+      		</xs:sequence>
+      	</xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="Reference">
+    <xs:sequence>
+         <xs:element name="name" type="xs:normalizedString" minOccurs="1" maxOccurs="1"/>
+         <xs:element name="description" type="xs:string" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:ID"/>
+  </xs:complexType>
+
+  <xs:complexType name="Sample">
+    <xs:sequence>
+         <xs:element name="name" type="xs:normalizedString" minOccurs="1" maxOccurs="1"/>
+         <xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:ID"/>
+  </xs:complexType>
+
+  <xs:complexType name="Bam">
+    <xs:sequence>
+         <xs:element name="path" type="xs:normalizedString" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:ID"/>
+    <xs:attribute name="sample" type="xs:IDREF"/>
+    <xs:attribute name="reference" type="xs:IDREF"/>
+  </xs:complexType>
+  
+  
+  
+  
+
+  <xs:complexType name="Project">
+    <xs:sequence>
+         <xs:element name="name" type="xs:normalizedString" minOccurs="1" maxOccurs="1"/>
+         <xs:element name="description" type="xs:string" minOccurs="0" maxOccurs="1"/>
+         <xs:element name="bams">
+	        <xs:complexType>
+	      		<xs:sequence>
+	      			<xs:element name="bam"  minOccurs="1" maxOccurs="unbounded">
+					   <xs:complexType>
+					    <xs:attribute name="ref" type="xs:IDREF"/>
+					  </xs:complexType>
+  	      			</xs:element>
+	      		</xs:sequence>
+	      	</xs:complexType>
+         </xs:element>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:ID"/>
+    <xs:attribute name="group" type="xs:IDREF"/>
+  </xs:complexType>
+
+  <xs:complexType name="User">
+    <xs:sequence>
+         <xs:element name="name" type="xs:normalizedString" minOccurs="1" maxOccurs="1"/>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:ID"/>
+  </xs:complexType>
+
+  <xs:complexType name="Group">
+    <xs:sequence>
+         <xs:element name="name" type="xs:normalizedString" minOccurs="1" maxOccurs="1"/>
+         <xs:element name="users">
+	        <xs:complexType>
+	      		<xs:sequence>
+	      			<xs:element name="user"  minOccurs="0" maxOccurs="unbounded">
+					   <xs:complexType>
+					    <xs:attribute name="ref" type="xs:IDREF"/>
+					  </xs:complexType>
+  	      			</xs:element>
+	      		</xs:sequence>
+	      	</xs:complexType>
+         </xs:element>
+    </xs:sequence>
+    <xs:attribute name="id" type="xs:ID"/>
+  </xs:complexType>
+
+
+
+  <xs:element name="vizbam" type="v:VizBam"/>
+</xs:schema>

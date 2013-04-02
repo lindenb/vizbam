@@ -7,10 +7,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.github.lindenb.vizbam.locparser.LocParser;
 
 
 import net.sf.picard.filter.AggregateFilter;
@@ -30,9 +28,9 @@ import net.sf.samtools.SAMRecordIterator;
 import net.sf.samtools.SAMSequenceDictionary;
 import net.sf.samtools.SAMSequenceRecord;
 
-public class VizBam implements Closeable
+public abstract class VizBam implements Closeable
     {
-    private static final Logger LOG=Logger.getLogger("com.github.lindenb.vizbam");
+    protected static final Logger LOG=Logger.getLogger("com.github.lindenb.vizbam");
     private SAMFileReader samFileReader;
     /** this class opened the samFileReader */
     private boolean samFileReaderOwner=false;
@@ -133,9 +131,24 @@ public class VizBam implements Closeable
 		return samRecordFilter;
 		}
     
+    protected abstract void startAlign(final String chromName,final int position);
+    protected abstract void endAlign(final String chromName,final int position);
+    protected abstract void printReference(final CharSequence reference);
+    protected abstract void printRuler(final CharSequence reference);
+
+    protected abstract void startRow();
+    protected abstract void endRow();
+    protected abstract void startSamRecord(final SAMRecord record);
+    protected abstract void endSamRecord(final SAMRecord record);
+    protected abstract void startCigar(final SAMRecord record,final CigarElement ce);
+    protected abstract void endCigar(final SAMRecord record,final CigarElement ce);
+    protected abstract void write(char c);
+    
+    
     public void align(final String chromName,final int position)
         {
         cleanup();
+        startAlign(chromName,position);
         LOG.info("align:"+chromName+":"+position);
         List<SAMRecord> L=new ArrayList<SAMRecord>();
         SAMRecordIterator iter=this.samFileReader.query(chromName, position, position+this.nCols, false);
@@ -213,6 +226,7 @@ public class VizBam implements Closeable
             	}
         	}
         StringBuilder refSequence=new StringBuilder(this.nCols);
+       
         /** current pixel_x */
         int pixel_x=0;
         
@@ -245,28 +259,52 @@ public class VizBam implements Closeable
                 ++refPos;
                 }
             }
-        System.out.println(refSequence);
+        printReference(refSequence);
+        
+        /** Ruler */
+        StringBuilder ruler=new StringBuilder(this.nCols);
+        pixel_x=0;
+        refPos=position;
+        while(pixel_x< pixel2refPos.length)
+            {
+            if(pixel2refPos[pixel_x]==-1 || !((pixel2refPos[pixel_x]-position)%10==0))
+            	{
+            	ruler.append(' ');
+            	}
+            else
+            	{
+            	String posStr=String.valueOf(pixel2refPos[pixel_x]);
+            	for(int i=0;i< posStr.length() && pixel_x < pixel2refPos.length;++i)
+            		{
+            		ruler.append(posStr.charAt(i));
+            		}
+            	}
+            
+            ++pixel_x;
+            }
+        printRuler(ruler);
        
         List<List<SAMRecord>> rows=packer.pack(L);
         for(List<SAMRecord> row:rows)
             {
+            startRow();
             pixel_x=0;
             refPos=position;
             for(SAMRecord samRecord:row)
                 {
-               
+                startSamRecord(samRecord);
                 byte readBases[]=samRecord.getReadBases();
                 while(refPos< samRecord.getAlignmentStart() &&
                 	  pixel_x < pixel2refPos.length)
                     {
                 	if( pixel2refPos[pixel_x]==-1)
                 		{
-                		System.out.print(";");
+                		write(';');
                 		pixel_x++;
                 		}
                 	else
                 		{
-                		System.out.print(".");
+                		write('.');
                 		refPos++;
                 		pixel_x++;
                 		}
@@ -292,6 +330,7 @@ public class VizBam implements Closeable
                 		++i)
                     {
                     final  CigarElement ce=cigarElements.get(i);
+                    startCigar(samRecord, ce);
                     switch(ce.getOperator())
                         {
                         case H : break; // ignore hard clips
@@ -303,8 +342,7 @@ public class VizBam implements Closeable
                                 {
                                 if(refPos>=position )
                                     {
-                                    System.out.print(Character.toLowerCase((char)readBases[readPos]));
-                                	//System.out.print("_");
+                                    write((char)readBases[readPos]);
                                     pixel_x++;
                                     }
                               
@@ -321,10 +359,10 @@ public class VizBam implements Closeable
                                      {
                                      while(pixel2refPos[pixel_x]==-1 || pixel2refPos[pixel_x]>refPos)
                                          {
-                                         System.out.print(".");
+                                         write('.');
                                          pixel_x++;
                                          }
-                                     System.out.print(">");
+                                     write('>');
                                      pixel_x++;
                                      }
                                  else
@@ -342,12 +380,12 @@ public class VizBam implements Closeable
                                     {
                                     while(pixel2refPos[pixel_x]==-1 || pixel2refPos[pixel_x]>refPos)
                                         {
-                                        System.out.print("*");
+                                        write('*');
                                         pixel_x++;
                                         }
                                     if(pixel_x < pixel2refPos.length)
                                     	{
-                                    	System.out.print((char)readBases[readPos]);
+                                    	write((char)readBases[readPos]);
                                     	pixel_x++;
                                     	}
                                     
@@ -360,108 +398,17 @@ public class VizBam implements Closeable
                             }
                         default: throw new IllegalStateException("op:"+ce.getOperator());
                         }
+                    endCigar(samRecord, ce);
                     }
-                
-                System.out.print("\t"+samRecord.getCigarString()+" "+
+               endSamRecord(samRecord);
+               /* System.out.print("\t"+samRecord.getCigarString()+" "+
                     samRecord.getReadString()+" refPos "+samRecord.getAlignmentStart()
-                    +" "+ getCigarBeginIndex(cigarElements));
+                    +" "+ getCigarBeginIndex(cigarElements));*/
                 }
-            System.out.println();
+            endRow();
             }
+        endAlign(chromName, position);
         }
    
-     public static void main(String[] args) throws Exception
-         {
-         LOG.setLevel(Level.OFF);
-         List<String> regions=new ArrayList<String>();
-         /*
-         args=new String[]{
-             "-L","ALL",   
-             "-R","/home/lindenb/package/samtools-0.1.18/examples/toy.fa",   
-             "/home/lindenb/package/samtools-0.1.18/examples/toy.bam"
-             };*/
-         File referenceFile=null;
-        int optind=0;
-        while(optind< args.length)
-            {
-            if(args[optind].equals("-h") ||
-               args[optind].equals("-help") ||
-               args[optind].equals("--help"))
-                {
-                System.err.println("Pierre Lindenbaum PhD. 2013");
-                System.err.println("Options:");
-                System.err.println(" -h help; This screen.");
-                System.err.println(" -R <fasta> Reference File.");
-                return;
-                }
-            else if(args[optind].equals("-r") && optind+1 < args.length)
-	            {
-            	regions.add(args[++optind]);
-	            }
-            else if(args[optind].equals("-R") && optind+1 < args.length)
-                {
-                referenceFile=new File(args[++optind]);
-                }
-            else if(args[optind].equals("-L") && optind+1 < args.length)
-                {
-                LOG.setLevel(Level.parse(args[++optind]));
-                }
-            else if(args[optind].equals("--"))
-                {
-                optind++;
-                break;
-                }
-            else if(args[optind].startsWith("-"))
-                {
-                System.err.println("Unknown option "+args[optind]);
-                return;
-                }
-            else
-                {
-                break;
-                }
-            ++optind;
-            }
-        
-        if(optind==args.length)
-        	{
-        	System.err.println("Illegal number of arguments");
-        	System.exit(-1);
-        	}
-        
-        if(referenceFile==null)
-        	{
-        	System.err.println("Reference file missing");
-        	System.exit(-1);
-        	}
-        IndexedFastaSequenceFile fsf=new IndexedFastaSequenceFile(referenceFile);
-        if(!fsf.isIndexed())
-        	{
-        	System.err.println("Reference file is not indexed.");
-        	System.exit(-1);
-        	}
-       
-        File f=new File(args[optind]);
-         
-        VizBam app=new VizBam(f,fsf);
-        
-        if(regions.isEmpty())
-        	{
-        	app.align(
-        			 fsf.getSequenceDictionary().getSequence(0).getSequenceName(),
-        			 1);
-        	}
-        for(String r: regions)
-        	{
-        	SAMSequencePosition pos=LocParser.parseOne(fsf.getSequenceDictionary(), r, true);
-        	if(pos==null)
-        		{
-        		System.err.println("Cannot parse region:"+r);
-        		System.exit(-1);
-        		}
-        	app.align(pos.getName(),pos.getPosition());
-        	}
-        
-        app.close();
-        }
+
     }

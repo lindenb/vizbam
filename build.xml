@@ -35,6 +35,21 @@
 	</jar>
 	<delete dir="tmp"/>
 </target>	
+
+<target name="webapp" depends="generate-sources">
+</target>
+	
+<target name="generate-sources">
+	   <mkdir dir="src/webapp/generated-sources/xjc"/>
+	   <exec executable="xjc">
+	       <arg value="-extension"/>
+	       <arg value="-Xinject-code"/>
+	       <arg value="-b"/> <arg value="src/webapp/resources/xsd/vizbam.jxb"/>
+	       <arg value="-d"/> <arg value="src/webapp/generated-sources/xjc"/>
+	       <arg value="-p"/> <arg value="com.github.lindenb.vizbam.webapp"/>
+	       <arg value="src/webapp/resources/xsd/vizbam.xsd"/>
+	   </exec>
+</target> 
 	
 	
 </project>

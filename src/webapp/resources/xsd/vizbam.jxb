@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jxb:bindings 
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
+	xmlns:jxb="http://java.sun.com/xml/ns/jaxb"
+	xmlns:ci="http://jaxb.dev.java.net/plugin/code-injector"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:v="http://github.com/lindenb/vizbam"
+	jxb:extensionBindingPrefixes="ci "
+	jxb:version="2.0"
+	>
+
+<jxb:bindings schemaLocation="vizbam.xsd">
+ 
+ 
+  <jxb:bindings node="/xs:schema/xs:complexType[@name='Bam']">
+  	<jxb:bindings node="xs:attribute[@name='sample']">
+        <jxb:property>
+          <jxb:baseType name="Sample"/>
+        </jxb:property>
+    </jxb:bindings>
+  	<jxb:bindings node="xs:attribute[@name='reference']">
+        <jxb:property>
+          <jxb:baseType name="Reference"/>
+        </jxb:property>
+    </jxb:bindings>
+  </jxb:bindings>   
+ 
+ 
+   <jxb:bindings node="/xs:schema/xs:complexType[@name='Project']">
+   
+    <jxb:bindings node="xs:sequence/xs:element[@name='bams']/xs:complexType/xs:sequence/xs:element[@name='bam']">
+  	<jxb:bindings node="xs:complexType/xs:attribute[@name='ref']">
+        <jxb:property>
+          <jxb:baseType name="Bam"/>
+        </jxb:property>
+    </jxb:bindings>
+     </jxb:bindings>
+ <jxb:bindings node="xs:attribute[@name='group']">
+        <jxb:property>
+          <jxb:baseType name="Group"/>
+        </jxb:property>
+    </jxb:bindings>
+ </jxb:bindings>
+ 
+    <jxb:bindings node="/xs:schema/xs:complexType[@name='Group']">
+   
+    <jxb:bindings node="xs:sequence/xs:element[@name='users']/xs:complexType/xs:sequence/xs:element[@name='user']">
+  	<jxb:bindings node="xs:complexType/xs:attribute[@name='ref']">
+        <jxb:property>
+          <jxb:baseType name="User"/>
+        </jxb:property>
+    </jxb:bindings>
+     </jxb:bindings>
+ </jxb:bindings>
+ 
+
+ 
+</jxb:bindings>
+</jxb:bindings>
