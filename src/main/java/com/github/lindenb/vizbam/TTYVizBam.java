@@ -96,19 +96,24 @@ public class TTYVizBam extends VizBam
 		{
 		getWriter().print(c);
 		}
-		
+	@Override
+	public void close() {
+		getWriter().flush();
+		super.close();
+		}
 	
 	
     public static void main(String[] args) throws Exception
 	    {
 	    LOG.setLevel(Level.OFF);
 	    List<String> regions=new ArrayList<String>();
-	    /*
+	    
 	    args=new String[]{
 	        "-L","ALL",   
-	        "-R","/home/lindenb/package/samtools-0.1.18/examples/toy.fa",   
-	        "/home/lindenb/package/samtools-0.1.18/examples/toy.bam"
-	        };*/
+	        "-r","1:897325",
+			"-R","/commun/data/pubdb/broadinstitute.org/bundle/1.5/b37/human_g1k_v37.fasta",
+			"/commun/data/projects/20130201.SNL149_0019_AD1HJ6ACXX.Exome3/align/CD00172/CD00172_recal.bam"
+	        };
 	    File referenceFile=null;
 	   int optind=0;
 	   while(optind< args.length)
@@ -125,7 +130,7 @@ public class TTYVizBam extends VizBam
 	           }
 	       else if(args[optind].equals("-r") && optind+1 < args.length)
 	           {
-	       	regions.add(args[++optind]);
+	       		regions.add(args[++optind]);
 	           }
 	       else if(args[optind].equals("-R") && optind+1 < args.length)
 	           {

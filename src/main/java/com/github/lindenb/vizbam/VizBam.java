@@ -43,7 +43,7 @@ public abstract class VizBam implements Closeable
    
     private int minMappingQuality=0;
    
-    private SamRecordListPacker packer=new SimpleSamRecordListpacker();//new PileupSamRecordListPacker();
+    private SamRecordListPacker packer=new PileupSamRecordListPacker();//new SimpleSamRecordListpacker();//
    
     protected VizBam(
             File bamFile,
@@ -248,10 +248,12 @@ public abstract class VizBam implements Closeable
             	char base='N';
             	if(referenceSequence!=null)
             		{
-            		if(referenceSequence!=null && refPos< referenceSequence.getBases().length)
+            		int idx=refPos-position;
+            		if(referenceSequence!=null &&
+            			idx >=0 && 	
+            			idx < referenceSequence.getBases().length)
             			{
-            			
-            			base=(char)referenceSequence.getBases()[refPos-1];
+            			base=(char)referenceSequence.getBases()[idx];
             			}
             		}
                 refSequence.append(base);
@@ -277,6 +279,7 @@ public abstract class VizBam implements Closeable
             	for(int i=0;i< posStr.length() && pixel_x < pixel2refPos.length;++i)
             		{
             		ruler.append(posStr.charAt(i));
+            		 ++pixel_x;
             		}
             	}
             
@@ -285,6 +288,8 @@ public abstract class VizBam implements Closeable
         printRuler(ruler);
        
         List<List<SAMRecord>> rows=packer.pack(L);
+        
+        
         for(List<SAMRecord> row:rows)
             {
             startRow();
@@ -294,7 +299,10 @@ public abstract class VizBam implements Closeable
                 {
                 startSamRecord(samRecord);
                 byte readBases[]=samRecord.getReadBases();
-                while(refPos< samRecord.getAlignmentStart() &&
+                /* samRecRefPos!=refpos because the read can start BEFORE 'position'. */
+                int samRecRefPos=samRecord.getAlignmentStart();
+                //reference position for that read.                
+                while(refPos< samRecRefPos &&
                 	  pixel_x < pixel2refPos.length)
                     {
                 	if( pixel2refPos[pixel_x]==-1)
@@ -313,6 +321,7 @@ public abstract class VizBam implements Closeable
                 List<CigarElement> cigarElements=samRecord.getCigar().getCigarElements();
              
                 //count readPos for ignored left prefix
+                
                 for(int i=0;i< getCigarBeginIndex(cigarElements);++i)
                 	{
                 	final  CigarElement ce=cigarElements.get(i);
@@ -355,43 +364,44 @@ public abstract class VizBam implements Closeable
                             {
                             for(int b=0;b<ce.getLength() && pixel_x < pixel2refPos.length ;++b)
                                  {
-                                 if(refPos>=position)
+                                 if(samRecRefPos>=position)
                                      {
-                                     while(pixel2refPos[pixel_x]==-1 || pixel2refPos[pixel_x]>refPos)
+                                     while(pixel2refPos[pixel_x]==-1 || pixel2refPos[pixel_x]>samRecRefPos)
                                          {
                                          write('.');
                                          pixel_x++;
                                          }
                                      write('>');
                                      pixel_x++;
+                                     refPos++;
                                      }
-                                 else
-                                     {
-                                     }
-                                 refPos++;
+                                 samRecRefPos++;
                                  }
                             break;
                             }
                         case EQ: case M: case X:
                             { 	
+                            	
+                            	
                             for(int b=0;b<ce.getLength() && pixel_x < pixel2refPos.length ;++b)
                                 {
-                                if(refPos>=position)
+                            	
+                                if(samRecRefPos>=position)
                                     {
-                                    while(pixel2refPos[pixel_x]==-1 || pixel2refPos[pixel_x]>refPos)
+                                    while(pixel2refPos[pixel_x]==-1 || pixel2refPos[pixel_x]>samRecRefPos)
                                         {
                                         write('*');
                                         pixel_x++;
                                         }
                                     if(pixel_x < pixel2refPos.length)
-                                    	{
+                                    	{//System.err.println("ok3 "+(char)readBases[readPos]);
                                     	write((char)readBases[readPos]);
                                     	pixel_x++;
                                     	}
-                                    
+                                    refPos++;
                                     }
                                 
-                                refPos++;
+                                samRecRefPos++;
                                 readPos++;
                                 }
                             break;
@@ -399,16 +409,20 @@ public abstract class VizBam implements Closeable
                         default: throw new IllegalStateException("op:"+ce.getOperator());
                         }
                     endCigar(samRecord, ce);
+                   
                     }
                endSamRecord(samRecord);
-               /* System.out.print("\t"+samRecord.getCigarString()+" "+
-                    samRecord.getReadString()+" refPos "+samRecord.getAlignmentStart()
-                    +" "+ getCigarBeginIndex(cigarElements));*/
+               /*
+                System.err.println("\t"+samRecord.getCigarString()+" "+
+                    " align-start: "+samRecord.getAlignmentStart()+
+                    " align-end: "+samRecord.getAlignmentEnd()+
+                    " "+ getCigarBeginIndex(cigarElements));*/
                 }
             endRow();
+           
             }
         endAlign(chromName, position);
         }
    
-
+    
     }
