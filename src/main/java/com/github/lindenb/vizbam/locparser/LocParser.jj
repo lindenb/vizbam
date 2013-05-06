@@ -9,6 +9,7 @@ package com.github.lindenb.vizbam.locparser;
 import net.sf.samtools.SAMSequenceDictionary;
 import net.sf.samtools.SAMSequenceRecord;
 import com.github.lindenb.vizbam.SAMSequencePosition;
+import com.github.lindenb.vizbam.SAMSequenceInterval;
 import java.math.BigInteger;
 
 /**
@@ -59,6 +60,20 @@ public class LocParser
 			}
 		}
 	
+	
+	public static SAMSequenceInterval parseInterval(SAMSequenceDictionary samSequenceDictionary,String s,boolean auto_trim)
+		{
+		try
+			{
+            LocParser parser = new LocParser(samSequenceDictionary,new java.io.StringReader(s),auto_trim);
+			return parser.interval();
+			}
+		catch(ParseException err)
+			{
+			return null;
+			}
+		}
+	
 	}
 	
 PARSER_END(LocParser)
@@ -86,15 +101,23 @@ TOKEN:
 
 
 
-public SAMSequencePosition one():{SAMSequencePosition pos; }
+public SAMSequencePosition one():{SAMSequenceInterval seg=null; }
 	{
-	( pos=segment() <EOF>)
+	( seg=segment() <EOF>)
 		{
-		return pos;
+		return seg.getMiddlePosition();
 		}
 	}
 
-private SAMSequencePosition segment():{
+public SAMSequenceInterval interval():{SAMSequenceInterval seg=null; }
+	{
+	( seg=segment() <EOF>)
+		{
+		return seg;
+		}
+	}
+
+private SAMSequenceInterval segment():{
 		SAMSequenceRecord chrom;
 		BigInteger start=null;
 		BigInteger end=null ;
@@ -126,10 +149,12 @@ private SAMSequencePosition segment():{
 			{
 			if(!this.auto_trim) throw new ParseException(end.toString()+" > "+ maxChrom);
 			end=maxChrom;
-			}
-		int pos=(int)((start.longValue()+end.longValue())/2L);
-		
-		return new SAMSequencePosition(chrom,pos);
+			}		
+		return new SAMSequenceInterval(
+			chrom,
+			start.intValue(),
+			end.intValue()
+			);
 		}
 	}
 

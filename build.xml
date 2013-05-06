@@ -13,14 +13,14 @@
 </target>
 
 <target name="vizbam.lib">
-	<mkdir dir="lib"/>
+	<mkdir dir="dist"/>
 	<mkdir dir="tmp"/>
 	
 		
 	<javac destdir="tmp" debug="true" includeantruntime="false">
 		<classpath refid="picard.lib"/>
 		<src path="src/main/java"/>
-		<include name="**/VizBam.java" />
+		<include name="**/*.java" />
 	</javac>
 	
 	<pathconvert property="manifest_cp1" pathsep=" " refid="picard.lib"/>
@@ -36,18 +36,11 @@
 	<delete dir="tmp"/>
 </target>	
 
-<target name="webapp" depends="generate-sources">
-</target>
 	
 <target name="generate-sources">
-	   <mkdir dir="src/webapp/generated-sources/xjc"/>
-	   <exec executable="xjc">
-	       <arg value="-extension"/>
-	       <arg value="-Xinject-code"/>
-	       <arg value="-b"/> <arg value="src/webapp/resources/xsd/vizbam.jxb"/>
-	       <arg value="-d"/> <arg value="src/webapp/generated-sources/xjc"/>
-	       <arg value="-p"/> <arg value="com.github.lindenb.vizbam.webapp"/>
-	       <arg value="src/webapp/resources/xsd/vizbam.xsd"/>
+	   <exec executable="javacc">
+	       <arg value="-OUTPUT_DIRECTORY=src/main/java/com/github/lindenb/vizbam/locparser"/>
+	       <arg value="src/main/java/com/github/lindenb/vizbam/locparser/LocParser.jj"/>
 	   </exec>
 </target> 
 	

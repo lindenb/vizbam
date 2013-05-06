@@ -45,8 +45,9 @@ public abstract class VizBam implements Closeable
     /** user filter for SamRecord */
     private SamRecordFilter samRecordFilter=null;
     /** private should we handle the base quality */
-    private boolean handleBaseQuality=true;
-    
+    private boolean handleBaseQuality=false;
+    /** should we display unclipped parts ?*/
+    private boolean useClipped=false;
     private int minMappingQuality=0;
    
     private SamRecordListPacker packer=new PileupSamRecordListPacker();//new SimpleSamRecordListpacker();//
@@ -62,6 +63,18 @@ public abstract class VizBam implements Closeable
     	this.samFileReaderOwner=true;
         }
    
+    
+	public void setUseClipped(boolean useClipped)
+		{
+		this.useClipped = useClipped;
+		}
+	
+	public boolean isUseClipped() {
+		return useClipped;
+		}
+
+    
+    
     protected VizBam(
     		SAMFileReader samFileReader,
             IndexedFastaSequenceFile indexedFastaSequenceFile
@@ -109,6 +122,7 @@ public abstract class VizBam implements Closeable
     /** skip all insertions at begin */
     private int getCigarBeginIndex(final List<CigarElement> cigarElements)
     	{
+    	if(isUseClipped()) return 0;
     	int i=0;
     	while(i< cigarElements.size())
     		{
@@ -123,10 +137,11 @@ public abstract class VizBam implements Closeable
     	return i;
     	}
     
-    /** skip all insertions at begin */
+    /** skip all insertions at end */
     private int getCigarEndIndex(final List<CigarElement> cigarElements)
     	{
     	int i=cigarElements.size();
+    	if(isUseClipped()) return i;
     	while(i -1 >=0)
     		{
     		CigarElement ce=cigarElements.get(i-1);
@@ -160,7 +175,17 @@ public abstract class VizBam implements Closeable
     protected abstract void write(char c);
     protected abstract void startBase(char base,int qual);
     protected abstract void endBase();
-
+    
+    
+	protected int left(final SAMRecord rec)
+		{
+		return isUseClipped()?rec.getUnclippedStart():rec.getAlignmentStart();
+		}
+	
+	protected int right(final SAMRecord rec)
+		{
+		return isUseClipped()?rec.getUnclippedEnd():rec.getAlignmentEnd();
+		}
     
     public void align(final String chromName,final int position)
         {
@@ -187,7 +212,7 @@ public abstract class VizBam implements Closeable
         Map<Integer,Consensus> consensus=new HashMap<Integer,Consensus>();
         for(SAMRecord rec:L)
             {
-            int refPos=rec.getAlignmentStart();;
+            int refPos=left(rec);
            
             List<CigarElement> cigarElements=rec.getCigar().getCigarElements();
             for(int i=getCigarBeginIndex(cigarElements);
@@ -206,7 +231,7 @@ public abstract class VizBam implements Closeable
                         if(gapSize==null) gapSize=0;
                         if(ce.getLength()> gapSize)
                             {
-                            LOG.info("Insertion "+ce.getLength()+" at "+refPos+" "+rec.getCigarString()+"/"+rec.getAlignmentStart());
+                            LOG.info("Insertion "+ce.getLength()+" at "+refPos+" "+rec.getCigarString()+"/"+left(rec));
                             genomicPos2gapSize.put(refPos, ce.getLength());
                             }
                         break;
@@ -304,6 +329,7 @@ public abstract class VizBam implements Closeable
             }
         printRuler(ruler);
        
+        this.packer.setUseClipped(this.isUseClipped());
         List<List<SAMRecord>> rows=packer.pack(L);
         
         
@@ -318,7 +344,7 @@ public abstract class VizBam implements Closeable
                 byte readBases[]=samRecord.getReadBases();
                 byte readQualities[]=samRecord.getBaseQualities();
                 /* samRecRefPos!=refpos because the read can start BEFORE 'position'. */
-                int samRecRefPos=samRecord.getAlignmentStart();
+                int samRecRefPos=left(samRecord);
                 //reference position for that read.                
                 while(refPos< samRecRefPos &&
                 	  pixel_x < pixel2refPos.length)
@@ -340,7 +366,9 @@ public abstract class VizBam implements Closeable
              
                 //count readPos for ignored left prefix
                 
-                for(int i=0;i< getCigarBeginIndex(cigarElements);++i)
+                for(int i=0;
+        			//isUseClipped()==false && <- NO need as getCigarBeginIndex returns i==0
+        			i< getCigarBeginIndex(cigarElements);++i)
                 	{
                 	final  CigarElement ce=cigarElements.get(i);
                     switch(ce.getOperator())

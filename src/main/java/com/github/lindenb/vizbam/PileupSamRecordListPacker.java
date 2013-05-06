@@ -18,7 +18,7 @@ public class PileupSamRecordListPacker extends AbstractSamRecordListpacker
 			for(List<SAMRecord> row:rows)
 				{
 				SAMRecord last=row.get(row.size()-1);
-				if(last.getUnclippedEnd()+1 < rec.getUnclippedStart())
+				if(right(last)+1 < left(rec))
 					{
 					row.add(rec);
 					ok=true;

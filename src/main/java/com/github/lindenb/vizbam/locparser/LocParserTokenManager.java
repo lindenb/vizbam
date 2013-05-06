@@ -3,6 +3,7 @@ package com.github.lindenb.vizbam.locparser;
 import net.sf.samtools.SAMSequenceDictionary;
 import net.sf.samtools.SAMSequenceRecord;
 import com.github.lindenb.vizbam.SAMSequencePosition;
+import com.github.lindenb.vizbam.SAMSequenceInterval;
 import java.math.BigInteger;
 
 /** Token Manager. */

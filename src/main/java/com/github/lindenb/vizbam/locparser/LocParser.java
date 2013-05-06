@@ -3,6 +3,7 @@ package com.github.lindenb.vizbam.locparser;
 import net.sf.samtools.SAMSequenceDictionary;
 import net.sf.samtools.SAMSequenceRecord;
 import com.github.lindenb.vizbam.SAMSequencePosition;
+import com.github.lindenb.vizbam.SAMSequenceInterval;
 import java.math.BigInteger;
 
 /**
@@ -52,15 +53,37 @@ public class LocParser implements LocParserConstants {
                         }
                 }
 
+
+        public static SAMSequenceInterval parseInterval(SAMSequenceDictionary samSequenceDictionary,String s,boolean auto_trim)
+                {
+                try
+                        {
+            LocParser parser = new LocParser(samSequenceDictionary,new java.io.StringReader(s),auto_trim);
+                        return parser.interval();
+                        }
+                catch(ParseException err)
+                        {
+                        return null;
+                        }
+                }
+
   final public SAMSequencePosition one() throws ParseException {
-                                  SAMSequencePosition pos;
-    pos = segment();
+                                  SAMSequenceInterval seg=null;
+    seg = segment();
     jj_consume_token(0);
-                {if (true) return pos;}
+                {if (true) return seg.getMiddlePosition();}
     throw new Error("Missing return statement in function");
   }
 
-  final private SAMSequencePosition segment() throws ParseException {
+  final public SAMSequenceInterval interval() throws ParseException {
+                                       SAMSequenceInterval seg=null;
+    seg = segment();
+    jj_consume_token(0);
+                {if (true) return seg;}
+    throw new Error("Missing return statement in function");
+  }
+
+  final private SAMSequenceInterval segment() throws ParseException {
                 SAMSequenceRecord chrom;
                 BigInteger start=null;
                 BigInteger end=null ;
@@ -116,9 +139,11 @@ public class LocParser implements LocParserConstants {
                         if(!this.auto_trim) {if (true) throw new ParseException(end.toString()+" > "+ maxChrom);}
                         end=maxChrom;
                         }
-                int pos=(int)((start.longValue()+end.longValue())/2L);
-
-                {if (true) return new SAMSequencePosition(chrom,pos);}
+                {if (true) return new SAMSequenceInterval(
+                        chrom,
+                        start.intValue(),
+                        end.intValue()
+                        );}
     throw new Error("Missing return statement in function");
   }
 
@@ -324,7 +349,7 @@ public class LocParser implements LocParserConstants {
       return (jj_ntk = jj_nt.kind);
   }
 
-  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<int[]>();
+  private java.util.List jj_expentries = new java.util.ArrayList();
   private int[] jj_expentry;
   private int jj_kind = -1;
 
@@ -354,7 +379,7 @@ public class LocParser implements LocParserConstants {
     }
     int[][] exptokseq = new int[jj_expentries.size()][];
     for (int i = 0; i < jj_expentries.size(); i++) {
-      exptokseq[i] = jj_expentries.get(i);
+      exptokseq[i] = (int[])jj_expentries.get(i);
     }
     return new ParseException(token, exptokseq, tokenImage);
   }

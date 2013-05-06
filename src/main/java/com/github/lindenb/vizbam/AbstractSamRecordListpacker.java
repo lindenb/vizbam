@@ -9,6 +9,7 @@ import net.sf.samtools.SAMRecordCoordinateComparator;
 
 public abstract class AbstractSamRecordListpacker implements SamRecordListPacker
 	{
+	private boolean useClipped=false;
 	protected AbstractSamRecordListpacker()
 		{
 		}
@@ -21,6 +22,28 @@ public abstract class AbstractSamRecordListpacker implements SamRecordListPacker
 		Collections.sort(records, getSAMRecordComparator());
 		}
 	@Override
-	public abstract List<List<SAMRecord>> pack(final List<SAMRecord> records);
+	public void setUseClipped(boolean useClipped)
+		{
+		this.useClipped = useClipped;
+		}
+	
+	@Override
+	public boolean isUseClipped() {
+		return useClipped;
+		}
+	
+	protected int left(final SAMRecord rec)
+		{
+		return isUseClipped()?rec.getUnclippedStart():rec.getAlignmentStart();
+		}
+	
+	protected int right(final SAMRecord rec)
+		{
+		return isUseClipped()?rec.getUnclippedEnd():rec.getAlignmentEnd();
+		}
 
+	
+	@Override
+	public abstract List<List<SAMRecord>> pack(final List<SAMRecord> records);
+	
 	}
