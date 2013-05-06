@@ -4,20 +4,20 @@ import java.io.File;
 
 import org.w3c.dom.Element;
 
-import net.sf.picard.reference.IndexedFastaSequenceFile;
+import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.CigarElement;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMRecord;
 
 public class XMLVizBam extends AbstractXMLVizBam
 	{
-	public XMLVizBam(File bamFile,IndexedFastaSequenceFile ref)
+	public XMLVizBam(File bamFile,ReferenceSequenceFile ref)
 		{
 		super(bamFile,ref);
 		}
 
 	public XMLVizBam(SAMFileReader samFileReader,
-			IndexedFastaSequenceFile indexedFastaSequenceFile)
+			ReferenceSequenceFile indexedFastaSequenceFile)
 		{
 		super(samFileReader, indexedFastaSequenceFile);
 		}

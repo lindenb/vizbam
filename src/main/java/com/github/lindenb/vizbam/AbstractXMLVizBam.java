@@ -11,10 +11,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
@@ -24,7 +21,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.Text;
 
-import net.sf.picard.reference.IndexedFastaSequenceFile;
+import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.CigarElement;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMRecord;
@@ -32,13 +29,13 @@ import net.sf.samtools.SAMRecord;
 public abstract class AbstractXMLVizBam extends VizBam
 	{
 	private Document dom=null;
-	protected AbstractXMLVizBam(File bamFile,IndexedFastaSequenceFile ref)
+	protected AbstractXMLVizBam(File bamFile,ReferenceSequenceFile ref)
 		{
 		super(bamFile,ref);
 		}
 
 	public AbstractXMLVizBam(SAMFileReader samFileReader,
-			IndexedFastaSequenceFile indexedFastaSequenceFile)
+			ReferenceSequenceFile indexedFastaSequenceFile)
 		{
 		super(samFileReader, indexedFastaSequenceFile);
 		}

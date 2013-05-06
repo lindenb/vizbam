@@ -18,6 +18,7 @@ import net.sf.picard.filter.NotPrimaryAlignmentFilter;
 import net.sf.picard.filter.SamRecordFilter;
 import net.sf.picard.reference.IndexedFastaSequenceFile;
 import net.sf.picard.reference.ReferenceSequence;
+import net.sf.picard.reference.ReferenceSequenceFile;
 
 import net.sf.samtools.CigarElement;
 import net.sf.samtools.CigarOperator;
@@ -38,7 +39,7 @@ public abstract class VizBam implements Closeable
     private SAMFileReader samFileReader;
     /** this class opened the samFileReader */
     private boolean samFileReaderOwner=false;
-    private IndexedFastaSequenceFile indexedFastaSequenceFile;
+    private ReferenceSequenceFile indexedFastaSequenceFile;
     private SAMSequenceDictionary samSequenceDictionary;
     /** number of columns */
     private int nCols=80;
@@ -54,7 +55,7 @@ public abstract class VizBam implements Closeable
    
     protected VizBam(
             File bamFile,
-            IndexedFastaSequenceFile indexedFastaSequenceFile
+            ReferenceSequenceFile indexedFastaSequenceFile
             )
         {
     	this(new SAMFileReader(bamFile),
@@ -73,11 +74,16 @@ public abstract class VizBam implements Closeable
 		return useClipped;
 		}
 
+	
+	public void setWidth(int nCols)
+		{
+		this.nCols = Math.max(10,nCols);
+		}
     
     
     protected VizBam(
     		SAMFileReader samFileReader,
-            IndexedFastaSequenceFile indexedFastaSequenceFile
+    		ReferenceSequenceFile indexedFastaSequenceFile
             )
         {
         this.samFileReader=samFileReader;
