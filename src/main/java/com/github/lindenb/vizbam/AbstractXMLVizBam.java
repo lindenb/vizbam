@@ -48,6 +48,7 @@ public abstract class AbstractXMLVizBam extends VizBam
 		return dom;
 		}
 	
+	
 	@Override
 	protected void cleanup()
 		{
@@ -166,6 +167,23 @@ public abstract class AbstractXMLVizBam extends VizBam
 		this.currentElement=(Element)this.currentElement.getParentNode();		
 		}
 
+	protected abstract Element createBaseElement(char c,int qual);
+	
+	
+	@Override
+	protected void startBase(char base, int qual)
+		{
+
+		Element e= createBaseElement(base,qual);
+		this.currentElement.appendChild(e);
+		this.currentElement=e;
+		}
+	
+	@Override
+	protected void endBase() {
+		this.currentElement=(Element)this.currentElement.getParentNode();		
+		}
+	
 	@Override
 	protected void write(char c)
 		{

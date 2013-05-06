@@ -29,6 +29,12 @@ public class XMLVizBam extends AbstractXMLVizBam
 		}
 
 	
+	@Override
+	protected Element createBaseElement(char c, int qual) {
+		Element E= getDocument().createElement("b");
+		E.setAttribute("q", String.valueOf(qual));
+		return E;
+		}
 	
 	protected Element createRulerElement()
 		{

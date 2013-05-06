@@ -63,13 +63,30 @@ public class HTMLVizBam extends AbstractXMLVizBam
 			if(record.getDuplicateReadFlag()) clazz.append("samD ");
 			if(record.getFirstOfPairFlag()) clazz.append("sam1 ");
 			if(record.getSecondOfPairFlag()) clazz.append("sam2 ");
-			if(record.getReadNegativeStrandFlag()) clazz.append("samRr ");
-			if(record.getMateNegativeStrandFlag()) clazz.append("samMr ");
-			if(record.getMateUnmappedFlag()) clazz.append("samMu ");
-			
+			if(record.getMateNegativeStrandFlag())
+				{
+				clazz.append("samMr ");
+				}
+			else
+				{
+				clazz.append("samMf ");
+				}
+			if(record.getMateUnmappedFlag())
+				{
+				clazz.append("samMu ");
+				}
 			}
 		if(record.getNotPrimaryAlignmentFlag()) clazz.append("samNPA ");
 		if(record.getReadUnmappedFlag()) clazz.append("samRu ");
+		if(record.getReadNegativeStrandFlag())
+			{
+			clazz.append("samRr ");
+			}
+		else
+			{
+			clazz.append("samRf ");
+			}
+		
 
 		clazz.append("qual"+((int)Math.ceil(record.getMappingQuality()/10.0))*10);
 		
@@ -77,6 +94,13 @@ public class HTMLVizBam extends AbstractXMLVizBam
 		E.setAttribute("title",String.valueOf(record.getReadName()));
 		return E;
 		}
+	
+	
+	@Override
+	protected Element createBaseElement(char c, int qual) {
+		return createElement("span","qual"+((int)Math.ceil(qual/10.0))*10);
+		}
+	
 	@Override
 	protected Element createCigarOperatorElement(SAMRecord record,
 			CigarElement ce) {

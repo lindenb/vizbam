@@ -46,7 +46,17 @@ public class TTYVizBam extends VizBam
 		{
 		
 		}
+	
+	@Override
+	protected void startBase(char base, int qual) {
+		
+		}
 
+	@Override
+	protected void endBase() {
+		
+		}
+	
 	@Override
 	protected void printReference(CharSequence reference)
 		{

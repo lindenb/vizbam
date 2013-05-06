@@ -30,6 +30,10 @@ import net.sf.samtools.SAMSequenceRecord;
 
 public abstract class VizBam implements Closeable
     {
+    private static final char SPACE1=' ';  
+    private static final char SPACE2=' ';  
+    private static final char SPACE3=' ';  
+
     protected static final Logger LOG=Logger.getLogger("com.github.lindenb.vizbam");
     private SAMFileReader samFileReader;
     /** this class opened the samFileReader */
@@ -40,7 +44,9 @@ public abstract class VizBam implements Closeable
     private int nCols=80;
     /** user filter for SamRecord */
     private SamRecordFilter samRecordFilter=null;
-   
+    /** private should we handle the base quality */
+    private boolean handleBaseQuality=true;
+    
     private int minMappingQuality=0;
    
     private SamRecordListPacker packer=new PileupSamRecordListPacker();//new SimpleSamRecordListpacker();//
@@ -76,7 +82,16 @@ public abstract class VizBam implements Closeable
         this.samRecordFilter=new AggregateFilter(L);
         }
    
+    public boolean isHandleBaseQuality()
+    	{
+		return handleBaseQuality;
+		}
    
+    public void setHandleBaseQuality(boolean handleBaseQuality)
+    	{
+		this.handleBaseQuality = handleBaseQuality;
+		}
+    
     public int getMinMappingQuality()
         {
         return minMappingQuality;
@@ -143,7 +158,9 @@ public abstract class VizBam implements Closeable
     protected abstract void startCigar(final SAMRecord record,final CigarElement ce);
     protected abstract void endCigar(final SAMRecord record,final CigarElement ce);
     protected abstract void write(char c);
-    
+    protected abstract void startBase(char base,int qual);
+    protected abstract void endBase();
+
     
     public void align(final String chromName,final int position)
         {
@@ -262,7 +279,7 @@ public abstract class VizBam implements Closeable
                 }
             }
         printReference(refSequence);
-        
+     
         /** Ruler */
         StringBuilder ruler=new StringBuilder(this.nCols);
         pixel_x=0;
@@ -271,7 +288,7 @@ public abstract class VizBam implements Closeable
             {
             if(pixel2refPos[pixel_x]==-1 || !((pixel2refPos[pixel_x]-position)%10==0))
             	{
-            	ruler.append(' ');
+            	ruler.append(SPACE1);
             	}
             else
             	{
@@ -299,6 +316,7 @@ public abstract class VizBam implements Closeable
                 {
                 startSamRecord(samRecord);
                 byte readBases[]=samRecord.getReadBases();
+                byte readQualities[]=samRecord.getBaseQualities();
                 /* samRecRefPos!=refpos because the read can start BEFORE 'position'. */
                 int samRecRefPos=samRecord.getAlignmentStart();
                 //reference position for that read.                
@@ -307,12 +325,12 @@ public abstract class VizBam implements Closeable
                     {
                 	if( pixel2refPos[pixel_x]==-1)
                 		{
-                		write(';');
+                		write(SPACE2);
                 		pixel_x++;
                 		}
                 	else
                 		{
-                		write('.');
+                		write(SPACE3);
                 		refPos++;
                 		pixel_x++;
                 		}
@@ -351,7 +369,12 @@ public abstract class VizBam implements Closeable
                                 {
                                 if(refPos>=position )
                                     {
+                                	if(isHandleBaseQuality()) startBase(
+                                			(char)readBases[readPos],
+                                			(byte)(readQualities==null || readPos> readQualities.length ? 0: readQualities[readPos])
+                                			);
                                     write((char)readBases[readPos]);
+                                    if(isHandleBaseQuality()) endBase();
                                     pixel_x++;
                                     }
                               
@@ -388,14 +411,20 @@ public abstract class VizBam implements Closeable
                             	
                                 if(samRecRefPos>=position)
                                     {
-                                    while(pixel2refPos[pixel_x]==-1 || pixel2refPos[pixel_x]>samRecRefPos)
+                                    while(pixel_x< pixel2refPos.length &&
+                                    	(pixel2refPos[pixel_x]==-1 || pixel2refPos[pixel_x]>samRecRefPos))
                                         {
                                         write('*');
                                         pixel_x++;
                                         }
                                     if(pixel_x < pixel2refPos.length)
-                                    	{//System.err.println("ok3 "+(char)readBases[readPos]);
+                                    	{
+                                    	if(isHandleBaseQuality()) startBase(
+                                    			(char)readBases[readPos],
+                                    			(byte)(readQualities==null || readPos> readQualities.length ? 0: readQualities[readPos])
+                                    			);
                                     	write((char)readBases[readPos]);
+                                    	if(isHandleBaseQuality())  endBase();
                                     	pixel_x++;
                                     	}
                                     refPos++;
