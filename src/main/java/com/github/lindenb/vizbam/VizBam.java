@@ -16,7 +16,6 @@ import net.sf.picard.filter.DuplicateReadFilter;
 import net.sf.picard.filter.FailsVendorReadQualityFilter;
 import net.sf.picard.filter.NotPrimaryAlignmentFilter;
 import net.sf.picard.filter.SamRecordFilter;
-import net.sf.picard.reference.IndexedFastaSequenceFile;
 import net.sf.picard.reference.ReferenceSequence;
 import net.sf.picard.reference.ReferenceSequenceFile;
 

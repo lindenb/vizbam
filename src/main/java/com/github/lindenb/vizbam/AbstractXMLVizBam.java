@@ -16,7 +16,6 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
-import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.Text;
@@ -29,6 +28,11 @@ import net.sf.samtools.SAMRecord;
 public abstract class AbstractXMLVizBam extends VizBam
 	{
 	private Document dom=null;
+	private Element rulerElement=null;
+	private List<Element> rows=new ArrayList<Element>();
+	private Element currentElement=null;
+
+	
 	protected AbstractXMLVizBam(File bamFile,ReferenceSequenceFile ref)
 		{
 		super(bamFile,ref);
@@ -103,7 +107,7 @@ public abstract class AbstractXMLVizBam extends VizBam
 	
 	protected abstract Element createRulerElement();
 		
-	private Element rulerElement=null;
+
 	@Override
 	protected void printRuler(CharSequence ruler)
 		{
@@ -113,8 +117,6 @@ public abstract class AbstractXMLVizBam extends VizBam
 
 	
 	
-	private List<Element> rows=new ArrayList<Element>();
-	private Element currentElement=null;
 	
 	protected abstract Element createRowElement(int rowIndex);
 		
@@ -198,18 +200,22 @@ public abstract class AbstractXMLVizBam extends VizBam
 			}
 		}
 	
+	/** create root element for printing */
+	protected abstract Node createRootElement();
+	
+	
 	public void print(Writer out) throws IOException
 		{
 		  try {
-			  DocumentFragment f=getDocument().createDocumentFragment();
-			  if(refElement!=null) f.appendChild(this.refElement);
-			  if(rulerElement!=null) f.appendChild(this.rulerElement);
+			  Node rootElement=createRootElement();
+			  if(refElement!=null) rootElement.appendChild(this.refElement);
+			  if(rulerElement!=null) rootElement.appendChild(this.rulerElement);
 			  
-			  for(Element r:this.rows) f.appendChild(r);
+			  for(Element r:this.rows) rootElement.appendChild(r);
 			  TransformerFactory tFactory =  TransformerFactory.newInstance();
 			  Transformer transformer = tFactory.newTransformer();
 			  transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-			  DOMSource source = new DOMSource(f);
+			  DOMSource source = new DOMSource(rootElement);
 			  StreamResult result = new StreamResult(out);
 			  transformer.transform(source, result);
 			  out.flush();

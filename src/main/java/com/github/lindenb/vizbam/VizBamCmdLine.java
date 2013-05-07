@@ -1,6 +1,10 @@
 package com.github.lindenb.vizbam;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.github.lindenb.vizbam.locparser.LocParser;
 
@@ -14,6 +18,7 @@ import net.sf.picard.reference.ReferenceSequenceFileFactory;
 import net.sf.picard.util.Log;
 import net.sf.samtools.BAMIndex;
 import net.sf.samtools.SAMFileReader;
+import net.sf.samtools.SAMSequenceRecord;
 
 public class VizBamCmdLine extends CommandLineProgram
 	{
@@ -30,8 +35,12 @@ public class VizBamCmdLine extends CommandLineProgram
     
     @Option(shortName= StandardOptionDefinitions.INPUT_SHORT_NAME, doc="A BAM file to process.")
     public File INPUT=null;
-    @Option(shortName= "P", doc="The position to process. Syntax is \"chrom:position\" the chromosome must be present in the reference .")
+    @Option(shortName= "P", doc="The position to process. Syntax is \"chrom:position\" the chromosome must be present in the reference .",optional=true)
     public String position=null;
+    @Option(shortName= "T", doc="File containing intervals.",optional=true)
+    public File intervalFile=null;
+
+    
     @Option(shortName= "W", doc="The screen width.",optional=true)
     public int width=80;
     @Option(shortName= "U", doc="Use Clipped Ends.",optional=true)
@@ -63,21 +72,70 @@ public class VizBamCmdLine extends CommandLineProgram
     	log.warn("INPUT should be BAM file not index file");
     	IoUtil.assertFileIsReadable(INPUT);
     	IoUtil.assertFileIsReadable(REFERENCE);
-    	if(position==null)
-    		{
-    		log.error("position was not specified");
-    		return -1;
-    		}
+    	List<SAMSequencePosition> positions=new ArrayList<SAMSequencePosition>();
     	
     	
         ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(REFERENCE);
-    	SAMSequencePosition loc=LocParser.parseOne(reference.getSequenceDictionary(), position, false);
-    	if(loc==null)
-    		{
-    		log.error("Cannot parse "+position);
-    		return -1;
-    		}
+    	
+    	if( intervalFile!=null)
+			{
+    		try
+	    		{
+		    	IoUtil.assertFileIsReadable(intervalFile);
+		    	BufferedReader in=IoUtil.openFileForBufferedReading(intervalFile);
+				String line;
+		    	while((line=in.readLine())!=null)
+		    		{
+		    		if(line.isEmpty() || line.startsWith("#")) continue;
+		    		String tokens[]=line.split("[\t]");
+		    		if(tokens.length<2)
+		    			{
+		    			log.error("bad position "+line);
+		    			in.close();
+		    			return -1;
+		    			}
+		    		SAMSequenceRecord samSequenceRecord=reference.getSequenceDictionary().getSequence(tokens[0]);
+		    		if(samSequenceRecord==null)
+		    			{
+		    			log.error("bad chromosome in "+line);
+		    			in.close();
+		    			return -1;
+		    			}
+		    		
+		    		SAMSequencePosition samSeqPos=new SAMSequencePosition(
+		    				samSequenceRecord,
+		    				Integer.parseInt(tokens[1])
+		    				);
+		    		positions.add(samSeqPos);
+		    		}
+		    	in.close();
+	    		}
+    		catch(IOException err)
+    			{
+    			log.error(err);
+    			return -1;
+    			}
+			}
+	
+	
+
         
+        if(position!=null)
+	        {
+	        SAMSequencePosition loc=LocParser.parseOne(reference.getSequenceDictionary(), position, false);
+	    	if(loc==null)
+	    		{
+	    		log.error("Cannot parse "+position);
+	    		return -1;
+	    		}
+	    	positions.add(loc);
+	        }
+        
+        if(positions.isEmpty())
+        	{
+        	log.error("No positions defined");
+    		return -1;
+        	}
         
         SAMFileReader samReader = null;
         
@@ -101,9 +159,11 @@ public class VizBamCmdLine extends CommandLineProgram
 	    			}
 	        	
 	    		setuptVizBam(viz);
-
-	    		viz.align(loc.getName(), loc.getPosition());
-	    		viz.print(pw);
+	    		for(SAMSequencePosition loc:positions)
+		    		{
+		    		viz.align(loc.getName(), loc.getPosition());
+		    		viz.print(pw);
+		    		}
 	    		viz.close();
 	        	}
 	        else
@@ -112,7 +172,10 @@ public class VizBamCmdLine extends CommandLineProgram
 	        	setuptVizBam(viz);
 	        	
 	        	viz.setWriter(pw);
-	        	viz.align(loc.getName(), loc.getPosition());
+	        	for(SAMSequencePosition loc:positions)
+		    		{
+		        	viz.align(loc.getName(), loc.getPosition());
+		    		}
 	        	viz.close();
 	        	}
 	        pw.flush();

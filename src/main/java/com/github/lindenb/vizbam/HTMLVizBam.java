@@ -1,9 +1,8 @@
 package com.github.lindenb.vizbam;
 
 import java.io.File;
-import java.io.PrintWriter;
-
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.CigarElement;
@@ -107,6 +106,10 @@ public class HTMLVizBam extends AbstractXMLVizBam
 		return createElement("span","cigar"+ce.getOperator().name());
 		}
 
-	
+	@Override
+	protected Node createRootElement()
+		{
+		return getDocument().createElement("div");
+		}
 	
 	}

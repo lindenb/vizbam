@@ -3,6 +3,7 @@ package com.github.lindenb.vizbam;
 import java.io.File;
 
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.CigarElement;
@@ -65,6 +66,9 @@ public class XMLVizBam extends AbstractXMLVizBam
 		return e;
 		}
 
-	
+	@Override
+	protected Node createRootElement() {
+		return getDocument().createElement("tview");
+		}
 	
 	}
