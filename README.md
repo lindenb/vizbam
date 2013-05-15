@@ -1,3 +1,32 @@
+VIZAM
+=====
+
+Java library displaying **SAM**/**BAM** alignments.
+
+Project status: **beta**
+
+Author: Pierre Lindenbaum PhD. @yokofakun
+
+Dependencies
+------------
+
+
+* Java 1.7
+* Picard http://picard.sourceforge.net/
+* apache ant
+
+
+Screenshots
+-----------
+
+Displaying a BAM like `samtools tview` (part of the project  https://github.com/lindenb/ngsproject )
+
+![tview](https://raw.github.com/lindenb/ngsproject/master/doc/tview.jpg)
+
+
+Cmd-Line Tools
+--------------
+
 <h3>VizBamCmdLine</h3>
 <p>USAGE: VizBamCmdLine [options]
 <p>
@@ -15,4 +44,28 @@
 <tr><td>BASE_QUALITY=Boolean</td><td>Handle Base quality  Default value: false. This option can be set to 'null' to clear the default value. Possible values: {true, false} </td></tr>
 </table>
 <br/>
+
+
+Installation
+------------
+
+```bash
+git clone "https://github.com/lindenb/vizbam.git"
+cd vizbam.git
+```
+
+edit build.properties to configure the project. Something like:
+
+```
+picard.version=1.91
+picard.dir=/home/lindenb/package/picard/picard-tools-${picard.version}
+```
+
+compile the library
+
+```bash
+ant
+```
+
+
 
