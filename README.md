@@ -1,7 +1,7 @@
-VIZAM
-=====
+VIZBAM
+======
 
-Java library displaying **SAM**/**BAM** alignments.
+Java library displaying **SAM** / **BAM** alignments.
 
 Project status: **beta**
 
